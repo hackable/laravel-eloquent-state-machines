@@ -80,6 +80,29 @@ trait HasStateMachines
                     $model->recordState($field, null, $currentState, [], $responsible, $changedAttributes);
                 });
         });
+        
+        // Even for update
+        self::updated(function (Model $model) {
+            collect($model->stateMachines)
+                ->each(function ($_, $field) use ($model) {
+                    $currentState = $model->$field;
+                    $stateMachine = $model->$field()->stateMachine();
+
+                    if ($currentState === null) {
+                        return;
+                    }
+
+                    if (!$stateMachine->recordHistory()) {
+                        return;
+                    }
+
+                    $responsible = auth()->user();
+
+                    $changedAttributes = $model->getChangedAttributes();
+
+                    $model->recordState($field, null, $currentState, [], $responsible, $changedAttributes);
+                });
+        });
     }
 
     public function getChangedAttributes() : array
